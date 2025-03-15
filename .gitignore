@@ -1,4 +1,9 @@
+.idea/
+
 .DS_Store
 *.pb
 *.mp4
 *.mov
+*.csv
+*.json
+*.mkv
