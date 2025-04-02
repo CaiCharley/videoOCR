@@ -60,15 +60,16 @@ def main(args):
 
     # Main loop for processing the video frames.
     while True:
+        # Applying OCR to every nth frame of the video, where n is defined by args.frame_rate.
+        # TODO: implement custom video start time
         frame_count += args.frame_rate
+        stream.set(cv2.CAP_PROP_POS_FRAMES, frame_count)
+
         ret, frame = stream.read()
         if not ret:
             break
 
-        # Applying OCR to every nth frame of the video, where n is defined by args.frame_rate.
-        stream.set(cv2.CAP_PROP_POS_FRAMES, frame_count)
-
-        orig = frame.copy()
+        orig = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         # Display the first frame and set up the mouse callback
         if args.crop and cropped is False:
             cv2.namedWindow("Select ROI")
@@ -83,7 +84,7 @@ def main(args):
                     cv2.destroyWindow("Select ROI")
 
         if args.crop:
-            orig = frame[y_start:y_end, x_start:x_end]
+            orig = orig[y_start:y_end, x_start:x_end]
 
         text = pytesseract.image_to_string(orig, config=f"-l {pytesseractLanguage} --oem 1 --psm 3 -c "
                                                         f"tessedit_char_whitelist={pytesseractWhitelist}")
