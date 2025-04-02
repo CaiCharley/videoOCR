@@ -49,7 +49,7 @@ def main(args):
           f"with {processingFrames} frames to be processed in total")
 
     # Initiate some variables.
-    frame_count = -1
+    frame_count = -args.frame_rate
     progress_bar = tqdm(total=processingFrames, unit='frames')
 
     # Create an empty list to hold the data
@@ -60,14 +60,13 @@ def main(args):
 
     # Main loop for processing the video frames.
     while True:
-        frame_count += 1
+        frame_count += args.frame_rate
         ret, frame = stream.read()
         if not ret:
             break
 
         # Applying OCR to every nth frame of the video, where n is defined by args.frame_rate.
-        if frame_count % args.frame_rate != 0:
-            continue
+        stream.set(cv2.CAP_PROP_POS_FRAMES, frame_count)
 
         orig = frame.copy()
         # Display the first frame and set up the mouse callback
