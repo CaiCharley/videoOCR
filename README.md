@@ -6,7 +6,7 @@ This repository contains a Python script that performs Optical Character Recogni
 by frame basis and generates a csv file with the OCR strings and their confidence scores.
 
 This was forked from [this repository](https://github.com/torbjornbp/video-ocr2srt) and simplified to read video
-frames at a set interval and output the OCR strings to a csv file without requiring EAST.
+frames at a set interval and output the OCR strings to a csv file without requiring EAST. Converted to using EasyOCR.
 
 Currently optimized to read numerals, such as to record readings from a meter over time.
 
@@ -22,15 +22,12 @@ Currently optimized to read numerals, such as to record readings from a meter ov
 ### Prerequisites
 
 - Python 3.8 or higher
-- Libraries and packages: argparse, pytesseract, cv2, imutils, pandas, tqdm
-
-Additionally, you will need to have the tessract installed. You can download it from
-this [link](https://github.com/UB-Mannheim/tesseract/wiki)
+- Libraries and packages: argparse, easyocr, cv2, imutils, pandas, tqdm
 
 ### Usage
 
 ```sh
-python videoOCR.py -v <path_to_video> -m <path_to_model> [-l <language>] [-f <frame_rate>] [-p]
+python videoEasyOCR.py -v <path_to_video> -m <path_to_model> [-l <language>] [-f <frame_rate>] [-p]
 ```
 
 Where:
@@ -38,13 +35,13 @@ Where:
 - `<video>`: This argument is required and it should be the path to the video file you want to process.
 - `<output>`: This argument is option and is the path to save the CSV. By default, it saves to the same directory as
   the video.
-- `<language>`: This argument is optional and it should be the language model for Pytesseract. The default is `eng` (
+- `<language>`: This argument is optional and it should be the language model for Pytesseract. The default is `en` (
   English). You can provide other language codes supported by Tesseract.
 - `<frame_rate>`: This argument is optional and it specifies the number of frames to skip for processing. By default,
   this value is `10`, which seems to give an ok compromise between detected text and and processing speed.
 - `-p` or `--preview`: This argument is optional. If included, it enables a preview of the video.
 - `-w` or `--whitelist`: This argument is optional. If included it lets you specify characters to whitelist in OCR. By
-  default, numerals are whitelisted: `"0123456789."`
+  default, numerals are whitelisted: `"0123456789"`
 - `-j` or `--json`: This argument is optional. If included, it enables the output of a JSON file with the OCR 
   strings and  their confidence scores.
 - "-c" or "--crop": This argument is optional. If included, it enables cropping of the video by selecting a region 
@@ -54,7 +51,7 @@ To process a video file named `video.mp4`, you would use the following
 command:
 
 ```sh
-python videoOCR.py -v video.mp4 -f 10
+python videoEasyOCR.py -v video.mp4 -f 10
 ```
 
 The script will process the video, performing OCR on every 10th frame and will output a csv in the format
