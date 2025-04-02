@@ -6,8 +6,24 @@ import pandas as pd
 from datetime import datetime
 from tqdm import tqdm
 
+cropped = False
+x_start, y_start, x_end, y_end = 0, 0, 0, 0
+
+def mouse_crop(event, x, y, flags, param):
+    global x_start, y_start, x_end, y_end, cropped
+
+    # Record the starting (x, y) coordinates on left mouse button down
+    if event == cv2.EVENT_LBUTTONDOWN:
+        x_start, y_start= x, y
+
+    # Record the ending (x, y) coordinates on left mouse button up
+    elif event == cv2.EVENT_LBUTTONUP:
+        x_end, y_end = x, y
+        cropped = True
 
 def main(args):
+    global cropped, x_start, y_start, x_end, y_end
+
     # Define paths for the video file and the pre-trained model file.
     videoFilePath = args.video
     outputFilePath = args.output if args.output else videoFilePath
@@ -54,6 +70,22 @@ def main(args):
             continue
 
         orig = frame.copy()
+        # Display the first frame and set up the mouse callback
+        if args.crop and cropped is False:
+            cv2.namedWindow("Select ROI")
+            cv2.setMouseCallback("Select ROI", mouse_crop, 0)
+
+            while cropped is False:
+                cv2.imshow("Select ROI", orig)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
+
+                if cropped:
+                    cv2.destroyWindow("Select ROI")
+
+        if args.crop:
+            orig = frame[y_start:y_end, x_start:x_end]
+
         text = pytesseract.image_to_string(orig, config=f"-l {pytesseractLanguage} --oem 1 --psm 3 -c "
                                                         f"tessedit_char_whitelist={pytesseractWhitelist}")
         # Extract OCR confidence score
@@ -139,8 +171,10 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--frame_rate', help='Number of frames to skip for processing', type=int, default=10)
     parser.add_argument('-p', '--preview', help='Enable preview of the video', action='store_true')
     parser.add_argument('-w', '--whitelist', help='whitelist characters to improve OCR result',
-                        default='1234567890.')
+                        default='1234567890')
     parser.add_argument('-j', '--json', help='Enable JSON output', action='store_true')
+    parser.add_argument('-c', '--crop',
+                        help='Crop the video frame by dragging selected region with cursor', action='store_true')
 
     args = parser.parse_args()
 

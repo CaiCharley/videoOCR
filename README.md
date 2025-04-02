@@ -47,6 +47,8 @@ Where:
   default, numerals are whitelisted: `"0123456789."`
 - `-j` or `--json`: This argument is optional. If included, it enables the output of a JSON file with the OCR 
   strings and  their confidence scores.
+- "-c" or "--crop": This argument is optional. If included, it enables cropping of the video by selecting a region 
+  with a mouse drag over the first frame. The region is saved and used for all subsequent frames.
 
 To process a video file named `video.mp4`, you would use the following
 command:
