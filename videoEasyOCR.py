@@ -71,8 +71,11 @@ def main(args):
         if not ret:
             break
 
-        # convert the frame to grayscale
-        orig = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # frame preprocessing
+        if (args.rotate):
+            frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+
+        # orig = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # Display the first frame and set up the mouse callback
         if args.crop and cropped is False:
@@ -80,7 +83,7 @@ def main(args):
             cv2.setMouseCallback("Select ROI", mouse_crop, 0)
 
             while cropped is False:
-                cv2.imshow("Select ROI", orig)
+                cv2.imshow("Select ROI", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
 
@@ -88,14 +91,19 @@ def main(args):
                     cv2.destroyWindow("Select ROI")
 
         if args.crop:
-            orig = orig[y_start:y_end, x_start:x_end]
+            frame = frame[y_start:y_end, x_start:x_end]
 
         # apply EasyOCR to the frame
-        result = reader.readtext(orig)
+        result = reader.readtext(frame)
         text, prob = "", 0
         if result:
             best_result = max(result, key=lambda item: item[2])
-            text, prob = filter_text(best_result[1], args.whitelist), best_result[2]
+            bbox, text, prob = best_result[0], filter_text(best_result[1], args.whitelist), best_result[2]
+            (top_left, top_right, bottom_right, bottom_left) = bbox
+            top_left = tuple(map(int, top_left))
+            bottom_right = tuple(map(int, bottom_right))
+            cv2.rectangle(frame, top_left, bottom_right, (0, 0, 255), 1)
+
 
         # Define the timing and length for each subtitle object.
         start_time_ms = stream.get(cv2.CAP_PROP_POS_MSEC)
@@ -117,7 +125,7 @@ def main(args):
 
         # Display a video preview with bounding boxes if the preview is enabled.
         if args.preview:
-            cv2.imshow("Preview", orig)
+            cv2.imshow("Preview", frame)
 
         # Update progress bar.
         progress_bar.update()
@@ -174,10 +182,11 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--frame_rate', help='Number of frames to skip for processing', type=int, default=10)
     parser.add_argument('-p', '--preview', help='Enable preview of the video', action='store_true')
     parser.add_argument('-w', '--whitelist', help='whitelist characters to improve OCR result',
-                        default='1234567890')
+                        default='1234567890-')
     parser.add_argument('-j', '--json', help='Enable JSON output', action='store_true')
     parser.add_argument('-c', '--crop',
                         help='Crop the video frame by dragging selected region with cursor', action='store_true')
+    parser.add_argument('-r', "--rotate", help="Rotate the video frame 90 degrees clockwise", action='store_true')
 
     args = parser.parse_args()
 
