@@ -11,20 +11,19 @@ from tqdm import tqdm
 cropped = False
 x_start, y_start, x_end, y_end = 0, 0, 0, 0
 
-def filter_text(text, whitelist):
-    return ''.join([char for char in text if char in whitelist])
 
 def mouse_crop(event, x, y, flags, param):
     global x_start, y_start, x_end, y_end, cropped
 
     # Record the starting (x, y) coordinates on left mouse button down
     if event == cv2.EVENT_LBUTTONDOWN:
-        x_start, y_start= x, y
+        x_start, y_start = x, y
 
     # Record the ending (x, y) coordinates on left mouse button up
     elif event == cv2.EVENT_LBUTTONUP:
         x_end, y_end = x, y
         cropped = True
+
 
 def main(args):
     global cropped, x_start, y_start, x_end, y_end
@@ -94,17 +93,16 @@ def main(args):
             frame = frame[min(y_start, y_end):max(y_start, y_end), min(x_start, x_end):max(x_start, x_end)]
 
         # apply EasyOCR to the frame
-        result = reader.readtext(frame)
+        result = reader.readtext(frame, batch_size=4, allowlist=args.whitelist)
         text, prob = "", 0
 
         if result:
             best_result = max(result, key=lambda item: item[2])
-            bbox, text, prob = best_result[0], filter_text(best_result[1], args.whitelist), best_result[2]
+            bbox, text, prob = best_result[0], best_result[1], best_result[2]
             (top_left, top_right, bottom_right, bottom_left) = bbox
             top_left = tuple(map(int, top_left))
             bottom_right = tuple(map(int, bottom_right))
             cv2.rectangle(frame, top_left, bottom_right, (0, 0, 255), 1)
-
 
         # Define the timing and length for each subtitle object.
         start_time_ms = stream.get(cv2.CAP_PROP_POS_MSEC)
