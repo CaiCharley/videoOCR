@@ -116,13 +116,14 @@ def main(args):
         entries['ocr_text'].append(str(text).strip())
         entries['ocr_confidence'].append(prob)
 
-        # Append data to json_output list
-        json_output.append({
-            'frame_number': frame_count,
-            'timecode_ms': start_time_ms,
-            'ocr_text': text,
-            'ocr_confidence': prob  # The confidence of the OCR string
-        })
+        # # Append data to json_output list
+        if args.json:
+            json_output.append({
+                'frame_number': frame_count,
+                'timecode_ms': start_time_ms,
+                'ocr_text': text,
+                'ocr_confidence': prob  # The confidence of the OCR string
+            })
 
         # Display a video preview with bounding boxes if the preview is enabled.
         if args.preview:
