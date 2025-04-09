@@ -27,7 +27,6 @@ def mouse_crop(event, x, y, flags, param):
         cropped = True
 
 def main(args):
-    os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
     global cropped, x_start, y_start, x_end, y_end
 
     # Define paths for the video file and the pre-trained model file.
@@ -91,11 +90,13 @@ def main(args):
                     cv2.destroyWindow("Select ROI")
 
         if args.crop:
-            frame = frame[y_start:y_end, x_start:x_end]
+            # Ensure the coordinates are in the correct order
+            frame = frame[min(y_start, y_end):max(y_start, y_end), min(x_start, x_end):max(x_start, x_end)]
 
         # apply EasyOCR to the frame
         result = reader.readtext(frame)
         text, prob = "", 0
+
         if result:
             best_result = max(result, key=lambda item: item[2])
             bbox, text, prob = best_result[0], filter_text(best_result[1], args.whitelist), best_result[2]
