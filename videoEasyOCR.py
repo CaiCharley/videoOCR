@@ -66,6 +66,7 @@ def main(args):
 
         if args.crop:
             if roi is False:
+                cv2.namedWindow('Select ROI', cv2.WINDOW_NORMAL)
                 roi = cv2.selectROI("Select ROI", frame)
                 cv2.destroyWindow("Select ROI")
 
