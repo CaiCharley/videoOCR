@@ -7,30 +7,16 @@ import os
 from datetime import datetime
 from tqdm import tqdm
 
-# globals for callback
-cropped = False
-x_start, y_start, x_end, y_end = 0, 0, 0, 0
 
-
-def mouse_crop(event, x, y, flags, param):
-    global x_start, y_start, x_end, y_end, cropped
-
-    # Record the starting (x, y) coordinates on left mouse button down
-    if event == cv2.EVENT_LBUTTONDOWN:
-        x_start, y_start = x, y
-
-    # Record the ending (x, y) coordinates on left mouse button up
-    elif event == cv2.EVENT_LBUTTONUP:
-        x_end, y_end = x, y
-        cropped = True
+def filter_text(text, whitelist):
+    return ''.join([char for char in text if char in whitelist])
 
 
 def main(args):
-    global cropped, x_start, y_start, x_end, y_end
-
-    # Define paths for the video file and the pre-trained model file.
+    # Define paths for the video file
     videoFilePath = args.video
-    outputFilePath = args.output if args.output else videoFilePath
+    videoName = os.path.splitext(os.path.basename(videoFilePath))[0]
+    outputFolderPath = args.output if args.output else os.path.dirname(videoFilePath)
 
     # Setup EasyOCR reader
     reader = easyocr.Reader([args.language])
@@ -58,6 +44,9 @@ def main(args):
     # Create an empty list to hold the JSON data.
     json_output = []
 
+    # Create roi
+    roi = False
+
     # Main loop for processing the video frames.
     while True:
         # Applying OCR to every nth frame of the video, where n is defined by args.frame_rate.
@@ -75,30 +64,20 @@ def main(args):
 
         # orig = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # Display the first frame and set up the mouse callback
-        if args.crop and cropped is False:
-            cv2.namedWindow("Select ROI")
-            cv2.setMouseCallback("Select ROI", mouse_crop, 0)
-
-            while cropped is False:
-                cv2.imshow("Select ROI", frame)
-                if cv2.waitKey(1) & 0xFF == ord("q"):
-                    break
-
-                if cropped:
-                    cv2.destroyWindow("Select ROI")
-
         if args.crop:
-            # Ensure the coordinates are in the correct order
-            frame = frame[min(y_start, y_end):max(y_start, y_end), min(x_start, x_end):max(x_start, x_end)]
+            if roi is False:
+                roi = cv2.selectROI("Select ROI", frame)
+                cv2.destroyWindow("Select ROI")
+
+            frame = frame[roi[1]:roi[1] + roi[3], roi[0]:roi[0] + roi[2]]
 
         # apply EasyOCR to the frame
-        result = reader.readtext(frame, batch_size=4, allowlist=args.whitelist)
+        result = reader.readtext(frame, batch_size=4)
         text, prob = "", 0
 
         if result:
             best_result = max(result, key=lambda item: item[2])
-            bbox, text, prob = best_result[0], best_result[1], best_result[2]
+            bbox, text, prob = best_result[0], filter_text(best_result[1], args.whitelist), best_result[2]
             (top_left, top_right, bottom_right, bottom_left) = bbox
             top_left = tuple(map(int, top_left))
             bottom_right = tuple(map(int, bottom_right))
@@ -153,9 +132,7 @@ def main(args):
         json_output.insert(0, extra_info)
 
         # Define the output filename for the JSON file.
-        output_json_filename = outputFilePath.rsplit('.', 1)[
-                                   0] + "_" + args.language + "_" + datetime.now().strftime(
-            "%Y-%m-%d-%H-%M") + ".json"
+        output_json_filename = os.path.join(outputFolderPath, videoName + '_OCR.json')
         print(f"Preparing to write JSON to file: {output_json_filename}")
 
         # Try to write JSON data to the file.
@@ -167,8 +144,7 @@ def main(args):
             print(f"Error while writing JSON file: {e}")
 
     # Write dataframe to csv
-    output_csv_filename = outputFilePath.rsplit('.', 1)[0] + "_" + args.language + "_" + datetime.now().strftime(
-        "%Y-%m-%d-%H-%M") + ".csv"
+    output_csv_filename = os.path.join(outputFolderPath, videoName + '_OCR.csv')
     print(f"Preparing to write CSV to file: {output_csv_filename}")
     pd.DataFrame.from_dict(entries).to_csv(output_csv_filename, index=True)
     print("CSV file written successfully")
@@ -177,7 +153,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Extract text from video using OCR and generate SRT file')
     parser.add_argument('-v', '--video', help='Path to the video file', required=True)
-    parser.add_argument('-o', '--output', help='Path to the output file')
+    parser.add_argument('-o', '--output', help='Path to the output folder')
     parser.add_argument('-l', '--language', help='Language for OCR', default='en')
     parser.add_argument('-f', '--frame_rate', help='Number of frames to skip for processing', type=int, default=10)
     parser.add_argument('-p', '--preview', help='Enable preview of the video', action='store_true')
