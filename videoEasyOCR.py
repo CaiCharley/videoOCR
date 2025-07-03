@@ -22,6 +22,8 @@ def main(args):
     reader = easyocr.Reader([args.language])
 
     # Open the video file.
+    if not os.path.isfile(videoFilePath):
+        exit("Video file not found")
     stream = cv2.VideoCapture(videoFilePath)
 
     # Fetch video properties.
