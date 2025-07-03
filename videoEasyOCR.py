@@ -52,11 +52,12 @@ def main(args):
         # Applying OCR to every nth frame of the video, where n is defined by args.frame_rate.
         # TODO: implement custom video start time
         frame_count += args.frame_rate
-        stream.set(cv2.CAP_PROP_POS_FRAMES, frame_count)
 
-        ret, frame = stream.read()
-        if not ret:
+        if frame_count >= total_frames:
             break
+
+        stream.set(cv2.CAP_PROP_POS_FRAMES, frame_count)
+        ret, frame = stream.read()
 
         # frame preprocessing
         if (args.rotate):
